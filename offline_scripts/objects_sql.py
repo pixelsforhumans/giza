@@ -41,12 +41,12 @@ ORDER BY Objects.ObjectID
 # Flex Fields (i.e. user defined fields) for Objects with Classification `Human Remains`
 FLEXFIELDS = """
 SELECT Objects.ObjectID, Objects.ClassificationID, UserFieldGroups.GroupName, UserFields.UserFieldName,
-UserFieldValueAuthority.UserFieldValue
+UserFieldXrefs.FieldValue
 FROM UserFieldXrefs
 JOIN UserFields ON UserFieldXrefs.UserFieldID=UserFields.UserFieldID
-JOIN UserFieldValueAuthority ON UserFields.UserFieldID=UserFieldValueAuthority.UserFieldID AND UserFieldValueAuthority.UserFieldValue != '(not assigned)'
 JOIN UserFieldGroups ON UserFieldXrefs.UserFieldGroupID=UserFieldGroups.UserFieldGroupID
 JOIN Objects ON UserFieldXrefs.ID=Objects.ObjectID AND Objects.ClassificationID=83
+WHERE UserFieldXrefs.FieldValue != '(not assigned)'
 ORDER BY Objects.ObjectID
 """
 
@@ -69,7 +69,7 @@ ORDER BY Objects.ObjectID
 # Related Constituents (Modern and Ancient) for all Objects
 RELATED_CONSTITUENTS = """
 SELECT ConXrefs.ID AS ID, Roles.Role, Roles.RoleID, ConXrefDetails.ConstituentID, Constituents.ConstituentTypeID,
-Constituents.DisplayName, Constituents.DisplayDate, Objects.ClassificationID, Constituents.Remarks,
+Constituents.DisplayName, Constituents.DisplayDate, Objects.ClassificationID, replace(replace(Constituents.Remarks, char(10), ''), char(13), ' ') AS Remarks,
 MediaPaths.Path AS ThumbPathName, MediaRenditions.ThumbFileName
 FROM ConXrefs
 INNER JOIN ConXrefDetails ON ConXrefs.ConXrefID=ConXrefDetails.ConXrefID AND ConXrefDetails.Unmasked=1
@@ -122,8 +122,8 @@ ORDER BY ID1
 # Related Media for all Objects
 RELATED_MEDIA = """
 SELECT MediaXrefs.ID AS ID, MediaMaster.MediaMasterID, Objects.ClassificationID, MediaXrefs.PrimaryDisplay,
-MediaRenditions.MediaTypeID, MediaRenditions.RenditionNumber, MediaMaster.Description,
-MediaMaster.MediaView, MediaMaster.PublicCaption,
+MediaRenditions.MediaTypeID, MediaRenditions.RenditionNumber, replace(replace(MediaMaster.Description, char(10), ''), char(13), ' ') AS Description,
+MediaMaster.MediaView, replace(replace(MediaMaster.PublicCaption, char(10), ''), char(13), ' ') AS PublicCaption,
 ThumbPath.Path AS ThumbPathName, MediaRenditions.ThumbFileName,
 MainPath.Path AS MainPathName, MediaFiles.FileName AS MainFileName
 FROM MediaXrefs

@@ -4,10 +4,27 @@ import elasticsearch_connection
 import getpass
 import json
 import operator
+import time
 
 from classifications import CLASSIFICATIONS, CONSTITUENTTYPES, MEDIATYPES
 import published_sql
 from utils import get_media_url, process_cursor_row
+
+def delete_pubs():
+	print "Deleting Pub Docs..."
+	# delete pubs
+	es = elasticsearch_connection.get_connection()
+	es_index = elasticsearch_connection.ELASTICSEARCH_INDEX
+	results = es.search(index=es_index, doc_type='pubdocs', body={
+		"size" : 1000,
+		"fields" : ["_id"],
+		"query": {
+			"match_all" : {}
+		}
+	})['hits']['hits']
+	for r in results:
+		elasticsearch_connection.delete(r['_id'], 'pubdocs')
+	print "Finished Deleting Pub Docs..."
 
 # First update each Published doc with the latest data
 # This is the basic information/metadata that comprises a Pubished document
@@ -440,6 +457,7 @@ def process_pub_related_media(CURSOR):
 # this groups published documents by author, for use on the Digital Giza Library page
 def create_library():
 	print "Creating Digital Library..."
+	time.sleep(3) # for some reason the library isn't always fully populated. see if a time delay helps
 
 	author_ids = []
 	size = 20
@@ -496,11 +514,12 @@ def create_library():
 
 				author_data['docs'].append({
 					'displaytext' : result['boilertext'],
+					'sorttext' : result['notes'],
 					'format' : result['format'],
 					# add file size
 					'url' : result['pdf']
 				})
-				author_data['docs'].sort(key=operator.itemgetter('displaytext'))
+				author_data['docs'].sort(key=operator.itemgetter('sorttext'))
 
 				data = json.dumps(author_data)
 				elasticsearch_connection.add_or_update_item(author_id, data, 'library')
@@ -527,7 +546,8 @@ def main(CURSOR=None):
 		except:
 			print "Could not connect to gizacardtms, defaulting to CSV files"
 
-	## process_pubs MUST go first.  The other methods can go in any order
+	## delete_pubs and process_pubs MUST go first.  The other methods can go in any order
+	delete_pubs()
 	process_pubs(CURSOR)
 	process_pub_related_sites(CURSOR)
 	process_pub_related_objects(CURSOR)
